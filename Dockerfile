@@ -127,7 +127,7 @@ maybe_upgrade_jirametrics || true
 run_initial_generation
 write_crontab
 
-/usr/local/bin/supercronic /app/crontab &
+/usr/local/bin/supercronic -passthrough-logs /app/crontab &
 SUPERCRONIC_PID=$!
 
 cd /config/target
