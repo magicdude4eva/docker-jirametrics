@@ -1,0 +1,16 @@
+services:
+  jirametrics:
+    image: flow-metrics-jirametrics
+    container_name: flow-metrics-jirametrics
+    build:
+      context: .
+      args:
+        INSTALL_PRE: ${INSTALL_PRE:-true}
+    environment:
+      - CRON_SCHEDULE=${CRON_SCHEDULE:-*/30 * * * *}
+      - INSTALL_PRE=${INSTALL_PRE:-true}
+    volumes:
+      - ./myreports:/config
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
