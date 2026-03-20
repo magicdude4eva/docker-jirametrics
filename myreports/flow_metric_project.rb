@@ -154,7 +154,7 @@ class Exporter
         end
 
         html_report do
-          html '<h1>eOCS>COM Aggregated report</h1><ul>', type: :header
+          html '<h1>Aggregated report</h1><ul>', type: :header
           board_lines = []
           included_projects.each do |project|
             project.all_boards.each_value do |board|
