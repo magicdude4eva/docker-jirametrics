@@ -43,3 +43,11 @@ A Dockerized setup for [JiraMetrics](https://jirametrics.org/), automating the g
 
 ## About JiraMetrics
 This project uses [mikebowler/jirametrics](https://github.com/mikebowler/jirametrics), a tool for analyzing Jira workflows, cycle time, and throughput. See [jirametrics.org](https://jirametrics.org) for details.
+
+<img width="1742" height="523" alt="{032FDBEA-F4C8-4CA8-8432-836F3342C53D}" src="https://github.com/user-attachments/assets/56e5de16-a9e5-4384-b5ce-6907c985581f" />
+
+<img width="1733" height="633" alt="image" src="https://github.com/user-attachments/assets/13135c22-909b-4fb3-ab2b-ecfacdfe0cad" />
+
+<img width="1737" height="605" alt="image" src="https://github.com/user-attachments/assets/46231780-33ac-4eb7-8816-ad511530d7a6" />
+
+<img width="1737" height="605" alt="image" src="https://github.com/user-attachments/assets/807eead6-3bac-4d3f-ba04-ebe212f567d3" />
