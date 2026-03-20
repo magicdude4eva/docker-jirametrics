@@ -60,6 +60,12 @@ RUN { \
     echo 'fi'; \
     echo ''; \
     echo 'echo "[INFO] Starting cron..."'; \
+    echo '# Write the cron file with the expanded CRON_SCHEDULE'; \
+    echo 'echo "SHELL=/bin/bash" > /etc/cron.d/jirametrics-cron'; \
+    echo 'echo "${CRON_SCHEDULE:-*/30 * * * *} root cd /config && jirametrics go >> /var/log/cron.log 2>&1" >> /etc/cron.d/jirametrics-cron'; \
+    echo 'echo "" >> /etc/cron.d/jirametrics-cron'; \
+    echo 'chmod 0644 /etc/cron.d/jirametrics-cron'; \
+    echo 'crontab /etc/cron.d/jirametrics-cron'; \
     echo 'cron && tail -f /var/log/cron.log &'; \
     echo ''; \
     echo 'echo "[INFO] Checking if initial reports need to be generated..."'; \
@@ -69,15 +75,6 @@ RUN { \
     echo 'cd /config/target && python3 -m http.server 8000'; \
     } > /entrypoint.sh && \
     chmod +x /entrypoint.sh
-
-# Create jirametrics-cron on the fly
-RUN { \
-    echo '# Configurable cron schedule (default: every 6 hours)'; \
-    echo 'SHELL=/bin/bash'; \
-    echo '${CRON_SCHEDULE:-0 */30 * *} root cd /config && jirametrics go >> /var/log/cron.log 2>&1'; \
-    } > /etc/cron.d/jirametrics-cron && \
-    chmod 0644 /etc/cron.d/jirametrics-cron && \
-    touch /var/log/cron.log
 
 # Create config and target directories
 RUN mkdir -p /config/target
