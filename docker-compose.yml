@@ -5,12 +5,15 @@ services:
     build:
       context: .
       args:
-        INSTALL_PRE: ${INSTALL_PRE:-true}
+        INSTALL_PRE: ${INSTALL_PRE:-false}
+        SUPERCRONIC_VERSION: ${SUPERCRONIC_VERSION:-v0.2.43}
     environment:
-      - CRON_SCHEDULE=${CRON_SCHEDULE:-*/30 * * * *}
-      - INSTALL_PRE=${INSTALL_PRE:-true}
+      CRON_SCHEDULE: ${CRON_SCHEDULE:-*/30 * * * *}
+      INSTALL_PRE: ${INSTALL_PRE:-false}
+      PORT: ${PORT:-8000}
+      TZ: Europe/Vienna
     volumes:
       - ./myreports:/config
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:${PORT:-8000}"
     restart: unless-stopped
