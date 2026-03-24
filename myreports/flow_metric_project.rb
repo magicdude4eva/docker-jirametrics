@@ -1,3 +1,4 @@
+
 class Exporter
 
   ### --------------------------------------------------------------------------------------------
@@ -67,27 +68,32 @@ class Exporter
           daily_wip_by_parent_chart
 
           # 2 Throughput
-		  throughput_chart
           throughput_chart do
-            #description_text '<h2>Number of items completed, grouped by issue type</h2><div class="p"></div>'
-			description_text <<-HTML
-			  <h2>Number of items completed, grouped by issue type</h2>
-			  <div class="p">
-				Throughput is the number of items completed in a period of time. We measure every Monday morning how many items have completed
-				since the previous Monday morning. We show throughput based on <b>work-item type</b>.
-			  </div>
-			HTML
+            description_text <<-HTML
+              <div>
+                <p>Throughput is the number of items completed in a period of time. We measure every Monday morning how many items have completed
+                since the previous Monday morning.
+                </p>
+                Throughput data is very useful for#{' '} <a href="https://blog.mikebowler.ca/2024/06/02/probabilistic-forecasting/">probabilistic forecasting</a>,
+                to determine when we'll be done. Try it now with the
+                <a href="<%= throughput_forecaster_url %>" target="_blank" rel="noopener noreferrer">
+                Focused Objective throughput forecaster,</a> to see how long it would take to complete all of the
+                <%= @not_started_count %> items you currently have in your backlog.
+              </div>
+              <h2>Number of items completed, grouped by issue type</h2>
+              <div class="p">
+               We show throughput based on <b>work-item type</b>.
+              </div>
+            HTML
           end
           throughput_chart do
             header_text nil
-            #description_text '<h2>Number of items completed, grouped by completion status and resolution</h2>'
-			description_text <<-HTML
-			  <h2>Number of items completed, grouped by completion status and resolution</h2>
-			  <div class="p">
-				Throughput is the number of items completed in a period of time. We measure every Monday morning how many items have completed
-				since the previous Monday morning. We show throughput based on <b>completion status</b> and <b>resolution</b>.
-			  </div>
-			HTML
+            description_text <<-HTML
+              <h2>Number of items completed, grouped by completion status and resolution</h2>
+              <div class="p">
+                We show throughput based on <b>completion status</b> and <b>resolution</b>.
+              </div>
+            HTML
             grouping_rules do |issue, rules|
               status, resolution = issue.status_resolution_at_done
               if resolution
@@ -97,14 +103,14 @@ class Exporter
               end
             end
           end
+		  
 
           # 3 Cycle Time
           cycletime_scatterplot do
             show_trend_lines
           end
-          cycletime_histogram
-		  #pull_request_cycle_time_histogram
-		  #pull_request_cycle_time_scatterplot
+          cycletime_histogram do
+          end
 
           # 4 Work Item Age
           aging_work_in_progress_chart
@@ -112,12 +118,48 @@ class Exporter
           aging_work_table
 
           # Other charts
+          cumulative_flow_diagram do
+            column_rules do |column, rule|
+              # Set colours
+              rule.color = case column.name
+                  when 'In Progress'
+                    '#ffd058'
+                  when 'Implementing'
+                    '#dd6bac'
+                  when 'Implemented'
+                    '#ffabae'
+                  when 'Merged'
+                    '#aa5eaa'
+                  when 'Verified'
+                    '#a7d2fc'
+                  when 'Done'
+                    '#0291bb'
+              end
+            end
+            arrival_rate_line_color   '#ff4c3a'
+            departure_rate_line_color '#640574'
+            triangle_color            '#ffff00'
+          end
+
           flow_efficiency_scatterplot
-          expedited_chart
           #sprint_burndown
 		  
+          expedited_chart
+		  
+		  # Pullrequest
+### Jirametrics only supports Github, hence commented out for now
+if false
+          pull_request_cycle_time_histogram do
+            cycletime_unit :hours
+          end
+          pull_request_cycle_time_scatterplot do
+            cycletime_unit :hours
+          end
+end
+### Jirametrics only supports Github, hence commented out for now
 		  # Dependency chart
           dependency_chart
+		  
         end
       end
     end
@@ -154,7 +196,7 @@ class Exporter
         end
 
         html_report do
-          html '<h1>Aggregated report</h1><ul>', type: :header
+          html '<h1>eOCS>COM Aggregated report</h1><ul>', type: :header
           board_lines = []
           included_projects.each do |project|
             project.all_boards.each_value do |board|
