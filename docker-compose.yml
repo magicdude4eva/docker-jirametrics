@@ -1,3 +1,30 @@
+#
+# Flow Metrics JiraMetrics - Docker Compose Configuration
+#
+# This file defines a Docker service for running JiraMetrics in a containerized environment.
+# JiraMetrics generates and serves flow metrics reports for Jira.
+#
+# Features:
+# - Automated report generation via cron
+# - Configurable schedule, port, and timezone
+# - Persistent storage for reports and configuration
+# - Optional pre-release builds
+#
+# Environment Variables:
+#   INSTALL_PRE:          Install pre-release version of JiraMetrics (default: true)
+#   SUPERCRONIC_VERSION:  Version of Supercronic (cron replacement) to use (default: v0.2.44)
+#   CRON_SCHEDULE:        Cron schedule for report updates (default: every 30 minutes)
+#   PORT:                 HTTP server port (default: 8000)
+#   TZ:                   Timezone for cron jobs (default: Europe/Vienna)
+#
+# Usage:
+# 1. Build the image:      docker-compose build
+# 2. Start the container:  docker-compose up -d
+# 3. Stop the container:   docker-compose down
+# 4. View logs:            docker-compose logs -f
+#
+# Reports and configuration are stored in the `./myreports` directory on the host.
+#
 services:
   jirametrics:
     image: flow-metrics-jirametrics
