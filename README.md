@@ -44,10 +44,20 @@ A Dockerized setup for [JiraMetrics](https://jirametrics.org/), automating the g
 ## About JiraMetrics
 This project uses [mikebowler/jirametrics](https://github.com/mikebowler/jirametrics), a tool for analyzing Jira workflows, cycle time, and throughput. See [jirametrics.org](https://jirametrics.org) for details.
 
-<img width="1742" height="523" alt="{032FDBEA-F4C8-4CA8-8432-836F3342C53D}" src="https://github.com/user-attachments/assets/56e5de16-a9e5-4384-b5ce-6907c985581f" />
+### Feature: Dataquality report gives insight into the state of data
+<img width="1886" height="528" alt="image" src="https://github.com/user-attachments/assets/83dd3461-4058-4bbe-9983-ee05fce29ad1" />
 
-<img width="1733" height="633" alt="image" src="https://github.com/user-attachments/assets/13135c22-909b-4fb3-ab2b-ecfacdfe0cad" />
+### Feature: WIP grouped by age / grouped by stalled
+<img width="1883" height="669" alt="image" src="https://github.com/user-attachments/assets/5d18afe3-697a-479e-88e7-146f00c6a23f" />
+<img width="1891" height="728" alt="image" src="https://github.com/user-attachments/assets/2af7ba45-73ae-4511-bb2a-ac3873c1c0a8" />
 
-<img width="1737" height="605" alt="image" src="https://github.com/user-attachments/assets/46231780-33ac-4eb7-8816-ad511530d7a6" />
+### Feature: Throughput chart by issue type and by completion status
+<img width="1870" height="551" alt="image" src="https://github.com/user-attachments/assets/54eb07ac-a3a9-4ca9-8c1b-6ac180d35ca6" />
+<img width="1881" height="553" alt="image" src="https://github.com/user-attachments/assets/dd47b5b8-1c90-4fdf-963c-da2219264e4d" />
 
-<img width="1737" height="605" alt="image" src="https://github.com/user-attachments/assets/807eead6-3bac-4d3f-ba04-ebe212f567d3" />
+### Feature: Cumulative Flow Diagram
+<img width="1886" height="744" alt="image" src="https://github.com/user-attachments/assets/d2615b1b-a883-4ed5-be1d-a5362f0b976b" />
+
+
+
+
