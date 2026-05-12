@@ -1,4 +1,4 @@
-
+# frozen_string_literal: true
 class Exporter
 
   ### --------------------------------------------------------------------------------------------
@@ -9,7 +9,7 @@ class Exporter
       show_experimental_charts: false, github_repos: nil
     exporter = self
     project name: name do
-      puts name
+      file_system.log name, also_write_to_stderr: true
       file_prefix file_prefix
 
       self.anonymize if anonymize
@@ -35,7 +35,7 @@ class Exporter
       download do
         self.rolling_date_count(rolling_date_count) if rolling_date_count
         self.no_earlier_than(no_earlier_than) if no_earlier_than
-        github_repo github_repos if github_repos
+        github_repo *github_repos if github_repos
       end
 
       issues.reject! do |issue|
@@ -66,44 +66,26 @@ class Exporter
           daily_wip_by_age_chart
           daily_wip_by_blocked_stalled_chart
           daily_wip_by_parent_chart
+          wip_by_column_chart do
+            show_recommendations
+          end
 
           # 2 Throughput
           throughput_chart do
-            description_text <<-HTML
-              <div>
-                <p>Throughput is the number of items completed in a period of time. We measure every Monday morning how many items have completed
-                since the previous Monday morning.
-                </p>
-                Throughput data is very useful for#{' '} <a href="https://blog.mikebowler.ca/2024/06/02/probabilistic-forecasting/">probabilistic forecasting</a>,
+            description_text <<~TEXT
+              <div>Throughput data is very useful for#{' '}
+                <a href="https://blog.mikebowler.ca/2024/06/02/probabilistic-forecasting/">probabilistic forecasting</a>,
                 to determine when we'll be done. Try it now with the
                 <a href="<%= throughput_forecaster_url %>" target="_blank" rel="noopener noreferrer">
                 Focused Objective throughput forecaster,</a> to see how long it would take to complete all of the
                 <%= @not_started_count %> items you currently have in your backlog.
               </div>
-              <h2>Number of items completed, grouped by issue type</h2>
-              <div class="p">
-               We show throughput based on <b>work-item type</b>.
-              </div>
-            HTML
+              <h2>Number of items completed, grouped by issue type</h2>'
+            TEXT
           end
-          throughput_chart do
-            header_text nil
-            description_text <<-HTML
-              <h2>Number of items completed, grouped by completion status and resolution</h2>
-              <div class="p">
-                We show throughput based on <b>completion status</b> and <b>resolution</b>.
-              </div>
-            HTML
-            grouping_rules do |issue, rules|
-              status, resolution = issue.status_resolution_at_done
-              if resolution
-                rules.label = "#{status.name}:#{resolution}"
-              else
-                rules.label = status.name
-              end
-            end
+          throughput_by_completed_resolution_chart do
+            description_text '<h2>Number of items completed, grouped by completion status and resolution</h2>'
           end
-		  
 
           # 3 Cycle Time
           cycletime_scatterplot do
@@ -119,26 +101,6 @@ class Exporter
 
           # Other charts
           cumulative_flow_diagram do
-            column_rules do |column, rule|
-              # Set colours
-              rule.color = case column.name
-                  when 'In Progress'
-                    '#ffd058'
-                  when 'Implementing'
-                    '#dd6bac'
-                  when 'Implemented'
-                    '#ffabae'
-                  when 'Merged'
-                    '#aa5eaa'
-                  when 'Verified'
-                    '#a7d2fc'
-                  when 'Done'
-                    '#0291bb'
-              end
-            end
-            arrival_rate_line_color   '#ff4c3a'
-            departure_rate_line_color '#640574'
-            triangle_color            '#ffff00'
           end
 
           flow_efficiency_scatterplot
@@ -146,17 +108,6 @@ class Exporter
 		  
           expedited_chart
 		  
-		  # Pullrequest
-### Jirametrics only supports Github, hence commented out for now
-if false
-          pull_request_cycle_time_histogram do
-            cycletime_unit :hours
-          end
-          pull_request_cycle_time_scatterplot do
-            cycletime_unit :hours
-          end
-end
-### Jirametrics only supports Github, hence commented out for now
 		  # Dependency chart
           dependency_chart
 		  
@@ -176,10 +127,10 @@ end
   end
 
   ### --------------------------------------------------------------------------------------------
-  ### Eurofunk aggregated
+  ### Aggregated
   def flow_metric_aggregated_project name:, project_names:, settings: {}
     project name: name do
-      puts name
+      file_system.log name
       file_prefix name
       self.settings.merge! stringify_keys(settings)
 
@@ -196,7 +147,7 @@ end
         end
 
         html_report do
-          html '<h1>eOCS>COM Aggregated report</h1><ul>', type: :header
+          html '<h1>Aggregated Report - Boards included in this report</h1><ul>', type: :header
           board_lines = []
           included_projects.each do |project|
             project.all_boards.each_value do |board|
@@ -206,6 +157,9 @@ end
           board_lines.sort.each { |line| html "<li>#{line}</li>", type: :header }
           html '</ul>', type: :header
 
+          daily_wip_by_age_chart
+          daily_wip_by_blocked_stalled_chart
+
           cycletime_scatterplot do
             show_trend_lines
             # For an aggregated report we group by board rather than by type
@@ -213,11 +167,44 @@ end
               rules.label = issue.board.name
             end
           end
+		  
+          cycletime_histogram do
+            # For an aggregated report we group by board rather than by type
+            grouping_rules do |issue, rules|
+              rules.label = issue.board.name
+            end
+          end
+		  
           # aging_work_in_progress_chart
           daily_wip_by_parent_chart do
             # When aggregating, the chart tends to need more vertical space
             canvas height: 400, width: 800
           end
+		  
+          # 2 Throughput
+          throughput_chart do
+            description_text <<~TEXT
+              <div>Throughput data is very useful for#{' '}
+                <a href="https://blog.mikebowler.ca/2024/06/02/probabilistic-forecasting/">probabilistic forecasting</a>,
+                to determine when we'll be done. Try it now with the
+                <a href="<%= throughput_forecaster_url %>" target="_blank" rel="noopener noreferrer">
+                Focused Objective throughput forecaster,</a> to see how long it would take to complete all of the
+                <%= @not_started_count %> items you currently have in your backlog.
+              </div>
+              <h2>Number of items completed, grouped by issue type</h2>'
+            TEXT
+            grouping_rules do |issue, rules|
+              rules.label = issue.board.name
+            end
+          end
+          throughput_by_completed_resolution_chart do
+            description_text '<h2>Number of items completed, grouped by completion status and resolution</h2>'
+            grouping_rules do |issue, rules|
+              rules.label = issue.board.name
+            end
+          end
+		  
+          # Other charts
           aging_work_table do
             # In an aggregated report, we likely only care about items that are old so exclude anything
             # under 21 days.
@@ -226,7 +213,7 @@ end
 
           dependency_chart do
             header_text 'Dependencies across boards'
-            description_text 'We are only showing dependencies across boards.'
+            description_text 'We are only showing dependencies across boards.<br>'
 
             # By default, the issue doesn't show what board it's on and this is important for an
             # aggregated view
