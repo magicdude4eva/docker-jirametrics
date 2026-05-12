@@ -41,57 +41,64 @@ Exporter.configure do
 		file_prefix: 'team-a',
 		rolling_date_count: 90,
 		no_earlier_than: '2026-01-01',
-		#starting_status: 'In Progress',
 		boards: {
 			0000 => lambda do |_|
 						start_at first_time_in_status('In Progress','Developing')
-						stop_at still_in_status_category('Done')
+						stop_at first_time_in_status('Done','Canceled')
 					end
 		},
+		# We exclude Epics and Features. The default will exclude Sub-Tasks.
+		ignore_types: ['Epic','Feature'],
+		# We ignore team-specific issues
 		ignore_issues: ['ABC'],
 		settings: {
 			date_annotations: [
 				{ date: "2026-01-12T11:00:00", label: "Some annotation" },
 				{ date: "2026-02-13T09:00:00", label: "Another annotation" }
 			],
+			# If the parent-linking is not working, we probably use custom-fields. look at the child JSON and find the name of the custom field
+			customfield_parent_links: ['customfield_10000'],
 			#blocked_statuses: ['Blocked'],
 			# The number of days of inactivity (no comments, movement of a a subtask, status changes or updates of any kind)
 			# before an item becomes considered stalled.
 			stalled_threshold_days: 5,
 			# A list of statuses that should be considered stalled, same as blocked above.
 			# This is useful if you have queues in your workflow where the work is just sitting and waiting for someone to free up.
-			stalled_statuses: ['Ready for Review','Ready for Verification','Ready for Acceptance'],
+			stalled_statuses: ['Ready for review','Ready for verification','Ready for acceptance'],
 			expedited_priority_names: ['Highest','Critical']
 		}
-		#ignore_types: ['Sub-task']
 
 	# 2) Team B
 	flow_metric_project name: 'Team B',
 		file_prefix: 'team-b',
 		rolling_date_count: 90,
 		no_earlier_than: '2026-01-01',
-		#starting_status: 'In Progress',
 		boards: {
-			1252 => lambda do |_|
+			0000 => lambda do |_|
 						start_at first_time_in_status('In Progress','Developing')
-						stop_at still_in_status_category('Done')
+						stop_at first_time_in_status('Done','Canceled')
 					end
 		},
+		# We exclude Epics and Features. The default will exclude Sub-Tasks.
+		ignore_types: ['Epic','Feature'],
+		# We ignore team-specific issues
 		ignore_issues: ['ABC'],
 		settings: {
 			date_annotations: [
 				{ date: "2026-01-12T11:00:00", label: "Some annotation" },
 				{ date: "2026-02-13T09:00:00", label: "Another annotation" }
 			],
+			# If the parent-linking is not working, we probably use custom-fields. look at the child JSON and find the name of the custom field
+			customfield_parent_links: ['customfield_10000'],
 			#blocked_statuses: ['Blocked'],
-			# The number of days of inactivity (no comments, status changes or updates of any kind) before an item becomes considered stalled.
+			# The number of days of inactivity (no comments, movement of a a subtask, status changes or updates of any kind)
+			# before an item becomes considered stalled.
 			stalled_threshold_days: 5,
 			# A list of statuses that should be considered stalled, same as blocked above.
 			# This is useful if you have queues in your workflow where the work is just sitting and waiting for someone to free up.
-			stalled_statuses: ['Ready for Review','Ready for Verification','Ready for Acceptance'],
+			stalled_statuses: ['Ready for review','Ready for verification','Ready for acceptance'],
 			expedited_priority_names: ['Highest','Critical']
 		}
-		#ignore_types: ['Sub-task']
 
 	# 3) Aggregation across two teams
 	flow_metric_aggregated_project name: 'Team Aggregated', project_names: ['Team A', 'Team B']
