@@ -11,10 +11,13 @@ A Dockerized setup for [JiraMetrics](https://jirametrics.org/), automating the g
 - Docker and Docker Compose installed.
 
 ## Usage
-1. Clone this repository.
-2. Adjust config in `./myreports` -> refer to [JiraMetrics](https://jirametrics.org/) for configuration.
-3. Run `docker-compose up --build`.
-4. Access reports at [http://localhost:8000](http://localhost:8000).
+1. Clone this repository or download this repository
+2. Download [Rancher Desktop](https://rancherdesktop.io/) or use WSL2 / Docker Engine etc
+3. Adjust config in `./myreports` -> refer to [JiraMetrics](https://jirametrics.org/) for configuration:
+   # Configure `jira.config` with your [Jira personal access token or API key](https://jirametrics.org/jira/)
+   # Adjust the `config.rb` to your board / team needs
+5. Run `docker-compose up --build`.
+6. Access reports at [http://localhost:8000](http://localhost:8000).
 
 ## Environment Variables
 | Variable          | Default Value       | Description                                      |
