@@ -41,8 +41,8 @@ A Dockerized setup for [JiraMetrics](https://jirametrics.org/), automating the g
 - Adjust `CRON_SCHEDULE` to change update frequency.
 
 ## Example Configuration
-- See [JiraMetrics Configuration Guide](https://jirametrics.org/configuration/) for details on how to configure `config.yml`.
-- Place your `config.yml` in the `./myreports` directory.
+- See [JiraMetrics Configuration Guide](https://jirametrics.org/configuration/) for details on how to configure `config.rb`.
+- Place your `config.rb` in the `./myreports` directory.
 
 ## About JiraMetrics
 This project uses [mikebowler/jirametrics](https://github.com/mikebowler/jirametrics), a tool for analyzing Jira workflows, cycle time, and throughput. See [jirametrics.org](https://jirametrics.org) for details.
