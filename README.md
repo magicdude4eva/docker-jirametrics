@@ -53,6 +53,53 @@ A Dockerized setup for [JiraMetrics](https://jirametrics.org/), automating the g
 - See [JiraMetrics Configuration Guide](https://jirametrics.org/configuration/) for details on how to configure `config.rb`.
 - Place your `config.rb` in the `./myreports` directory.
 
+## Custom Reports
+
+This repository includes custom Ruby scripts to enhance the standard JiraMetrics reports with additional capacity and flow analysis.
+
+### 📊 Capacity Report (`myreports/capacity_report.rb`)
+
+A comprehensive capacity analysis tool that provides insights into team work distribution across Feature, Bug, and Other/Overhead buckets.
+
+**Features:**
+- Analyzes worklog data from Jira (via jirametrics.org JSON exports)
+- Monthly breakdown of ignored maintenance issues with per-month hours
+- Sub-task parent distribution analysis
+- Monthly trend visualization with focus mix and delta to previous month
+- Capacity split by bucket (Feature/Bug/Other)
+- Breakdown by issue type and worklog author
+- Top representative issues per bucket
+- Cross-team summary and pattern analysis
+- Early warning signals for capacity breaches
+
+**Usage:**
+```bash
+ruby myreports/capacity_report.rb myreports/config.rb
+```
+
+**Output includes:**
+- Per-team capacity analysis with color-coded buckets
+- Monthly trends showing Feature/Bug/Other percentage mix
+- Ignored issues with monthly worklog breakdown
+- Top contributors with focus spread visualization
+- Cross-team pattern analysis with breach detection
+
+**Capacity Thresholds:**
+- **Bug % > 20%**: Quality debt & interrupt load consuming capacity (muda)
+- **Other % > 25%**: Overhead crowding out value delivery (mura)
+- **Feature % < 50%**: Less than half effort on value-adding work
+- **SPOF > 30%**: Single point of failure risk (muri)
+- **Trend arrows**: Early warning for metrics trending toward thresholds
+
+### 📈 Flow Metrics Enhancements (`myreports/flow_metric_project.rb`)
+
+Added custom charts to the standard flow metrics reports:
+
+**Daily WIP by Issue Type Chart**
+- Shows Work In Progress per day, grouped by issue type
+- Color-coded by type: Bug (red), Story (blue), Task (green), Other (gray)
+- Helps identify when bugs are consuming capacity that should be on features
+
 ## About JiraMetrics
 This project uses [mikebowler/jirametrics](https://github.com/mikebowler/jirametrics), a tool for analyzing Jira workflows, cycle time, and throughput. See [jirametrics.org](https://jirametrics.org) for details.
 
