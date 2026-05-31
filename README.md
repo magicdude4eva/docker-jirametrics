@@ -58,8 +58,12 @@ A Dockerized setup for [JiraMetrics](https://jirametrics.org/), automating the g
 This repository includes custom Ruby scripts to enhance the standard JiraMetrics reports with additional capacity and flow analysis.
 
 ### 📊 Capacity Report (`myreports/capacity_report.rb`)
-
 A comprehensive capacity analysis tool that provides insights into team work distribution across Feature, Bug, and Other/Overhead buckets.
+<img width="1051" height="961" alt="image" src="https://github.com/user-attachments/assets/93c8cb09-78ea-44ab-91cc-dafe007d9ea5" />
+
+<img width="1289" height="692" alt="image" src="https://github.com/user-attachments/assets/bf842b79-1c1d-471a-9979-89fe87f2ffdd" />
+
+
 
 **Features:**
 - Analyzes worklog data from Jira (via jirametrics.org JSON exports)
