@@ -252,6 +252,14 @@ teams.each do |team|
               by_bucket: BUCKET_ORDER.each_with_object({}) { |b, h2| h2[b] = 0 } }
   end
 
+  # BY PERSON for current month only
+  current_month = Date.today.strftime('%Y-%m')
+  current_month_start = Date.parse("#{current_month}-01")
+  by_person_current_month = Hash.new do |h, k|
+    h[k] = { seconds: 0,
+              by_bucket: BUCKET_ORDER.each_with_object({}) { |b, h2| h2[b] = 0 } }
+  end
+
   subtask_parents         = Hash.new(0)
   bucket_issues           = BUCKET_ORDER.each_with_object({}) { |b, h| h[b] = [] }
   monthly                 = Hash.new { |h, k| h[k] = BUCKET_ORDER.each_with_object({}) { |b, h2| h2[b] = 0 } }
@@ -322,6 +330,9 @@ teams.each do |team|
     # ── Worklogs ──────────────────────────────────────────────────────
     spent, newest, paginated, by_author, by_month = worklog_seconds_from(fields, cutoff)
 
+    # Accumulate current month data
+    _, _, _, by_author_cm, _ = worklog_seconds_from(fields, current_month_start)
+
     if paginated
       if newest.nil?
         pagination_unknown += 1
@@ -345,18 +356,27 @@ teams.each do |team|
       by_person[author][:by_bucket][bucket]   += secs
     end
 
+    # ── Accumulate current month by WORKLOG AUTHOR ─────────────────
+    by_author_cm.each do |author, secs|
+      by_person_current_month[author][:seconds]             += secs
+      by_person_current_month[author][:by_bucket][bucket]   += secs
+    end
+
     # ── Accumulate by month ─────────────────────────────────────────────────
     by_month.each { |month, secs| monthly[month][bucket] += secs }
 
+    # Store top contributor's hours (not total issue hours) for representative issues
+    top_author_data = by_author.max_by { |_, secs| secs }
     bucket_issues[bucket] << {
       key: issue_key, summary: summary, type: issue_type,
-      hours: spent / 3600.0,
-      top_author: by_author.max_by { |_, secs| secs }&.first || '—'
+      hours: top_author_data ? (top_author_data[1].to_f / 3600.0) : 0,
+      top_author: top_author_data&.first || '—'
     }
   end
 
   total_count   = by_bucket.values.sum { |v| v[:count] }
   total_seconds = by_bucket.values.sum { |v| v[:seconds] }
+  total_seconds_current_month = by_person_current_month.values.sum { |v| v[:seconds] }
 
   top_contributor = by_person.max_by { |_, v| v[:seconds] }
   top_contributor_data = if top_contributor && total_seconds > 0
@@ -569,10 +589,33 @@ teams.each do |team|
     spread = "#{bar} #{fmt_focus_pcts(f_pct, b_pct, o_pct)}"
     puts "│  #{author.ljust(28)} #{fmt_hours(data[:seconds])}  #{fmt_pct(hour_pct)}  #{spread}"
   end
+  puts "│  Note: Worklog breakdown is per team-board. Cross-team work appears on respective team reports."
+
+  # ── By person (current month only) ────────────────────────────────
+  puts "│"
+  puts "│  #{COL_OTHER}BY PERSON — #{current_month} only, hours by worklog author, focus spread (F=Feature B=Bug O=Other)#{COL_RESET}"
+  puts "│  #{'Author'.ljust(28)} #{'Hours'.rjust(8)}  #{'H%'.rjust(6)}  Focus"
+  puts "│  #{'-' * 28} #{'-' * 8}  #{'-' * 6}  #{'-' * 42}"
+  by_person_current_month.sort_by { |_, v| -v[:seconds] }.first(TOP_PERSONS).each do |author, data|
+    next if data[:seconds] == 0
+    hour_pct = total_seconds_current_month > 0 ? data[:seconds].to_f / total_seconds_current_month * 100 : 0
+    ps = data[:seconds].to_f
+    f_pct = ps > 0 ? data[:by_bucket][:feature] / ps * 100 : 0
+    b_pct = ps > 0 ? data[:by_bucket][:bug]     / ps * 100 : 0
+    o_pct = ps > 0 ? data[:by_bucket][:other]   / ps * 100 : 0
+    bw    = 20
+    fw    = (f_pct / 100 * bw).round
+    bw2   = (b_pct / 100 * bw).round
+    ow    = [bw - fw - bw2, 0].max
+    bar    = "#{COL_FEATURE}#{'█' * fw}#{COL_BUG}#{'█' * bw2}#{COL_OTHER}#{'█' * ow}#{COL_RESET}"
+    spread = "#{bar} #{fmt_focus_pcts(f_pct, b_pct, o_pct)}"
+    puts "│  #{author.ljust(28)} #{fmt_hours(data[:seconds])}  #{fmt_pct(hour_pct)}  #{spread}"
+  end
+  puts "│  Note: Worklog breakdown is per team-board. Cross-team work appears on respective team reports."
 
   # ── Representative issues ──────────────────────────────────────────
   puts "│"
-  puts "│  #{COL_OTHER}REPRESENTATIVE ISSUES — top #{TOP_ISSUES} by hours per bucket#{COL_RESET}"
+  puts "│  #{COL_OTHER}REPRESENTATIVE ISSUES — top #{TOP_ISSUES} by hours per bucket (top contributor per issue)#{COL_RESET}"
   BUCKET_ORDER.each do |b|
     top = bucket_issues[b].sort_by { |i| -i[:hours] }.reject { |i| i[:hours] == 0 }.first(TOP_ISSUES)
     next if top.empty?
@@ -581,7 +624,7 @@ teams.each do |team|
     puts "│    #{'Hours'.rjust(7)}  #{'Top contributor'.ljust(24)} Key + Summary"
     puts "│    #{'-' * 7}  #{'-' * 24} #{'-' * 40}"
     top.each do |i|
-      puts "│    #{('%.1fh' % i[:hours]).rjust(7)}  #{i[:top_author].ljust(24)} #{i[:key]}  #{i[:summary][0..49]}"
+      puts "│    #{('%.1fh' % i[:hours]).rjust(7)}  #{i[:top_author].ljust(24)} #{i[:key].ljust(11)} #{i[:summary][0..49]}"
     end
   end
 
