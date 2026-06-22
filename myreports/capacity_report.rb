@@ -7,7 +7,7 @@
 # Analyzes worklog data from Jira (via jirametrics.org JSON exports) to show:
 #   - Ignored maintenance issues with monthly breakdown
 #   - Sub-task parent distribution (sorted: Feature first, then others)
-#   - Monthly trend with focus mix and delta to previous month
+#   - Monthly trend with focus mix, delta, and completed issue counts per bucket
 #   - Capacity split by bucket (Feature/Bug/Other)
 #   - Breakdown by issue type and worklog author
 #   - Top representative issues per bucket
@@ -163,7 +163,13 @@ def fmt_delta(slope, good_up: true)
   else
     COL_BUG      # red
   end
-  "#{color}#{arrow}#{format('%+.1f', slope)}%#{COL_RESET unless color.empty?}"
+  # Format sign+number with leading space for single-digit numbers (e.g., +4.7 → + 4.7)
+  num_val = slope.abs.round(1)
+  num_str_no_sign = num_val.to_s
+  sign = slope > 0 ? '+' : (slope < 0 ? '-' : ' ')
+  # Pad number part: if number is 3 chars (X.Y), add space after sign
+  num_padded = num_str_no_sign.length == 3 ? "#{sign} #{num_val}" : "#{sign}#{num_val}"
+  "#{color}#{arrow}#{num_padded}%#{COL_RESET unless color.empty?}"
 end
 
 # Returns [seconds_after_cutoff, oldest_entry_date, paginated?,
@@ -263,6 +269,7 @@ teams.each do |team|
   subtask_parents         = Hash.new(0)
   bucket_issues           = BUCKET_ORDER.each_with_object({}) { |b, h| h[b] = [] }
   monthly                 = Hash.new { |h, k| h[k] = BUCKET_ORDER.each_with_object({}) { |b, h2| h2[b] = 0 } }
+  monthly_completed       = Hash.new { |h, k| h[k] = BUCKET_ORDER.each_with_object({}) { |b, h2| h2[b] = 0 } }
   ignored_count           = 0
   ignored_direct_seconds  = 0
   ignored_subtasks        = 0
@@ -326,6 +333,22 @@ teams.each do |team|
 
     bucket = resolve_bucket(issue_type, parent_type)
     subtask_parents[parent_type || 'Unknown'] += 1 if issue_type == 'Sub-Task'
+
+    # ── Track completed issues (DONE but not CANCELLED) ────────────────
+    status = fields.dig('status', 'name')
+    is_done = status == 'Done'
+    is_canceled = fields.dig('resolution', 'name') == 'Canceled' || status == 'Canceled'
+
+    if is_done && !is_canceled
+      resolution_date_str = fields['resolutiondate']
+      if resolution_date_str
+        resolution_date = Date.parse(resolution_date_str) rescue nil
+        if resolution_date && (cutoff.nil? || resolution_date >= cutoff)
+          completion_month = resolution_date.strftime('%Y-%m')
+          monthly_completed[completion_month][bucket] += 1
+        end
+      end
+    end
 
     # ── Worklogs ──────────────────────────────────────────────────────
     spent, newest, paginated, by_author, by_month = worklog_seconds_from(fields, cutoff)
@@ -528,8 +551,8 @@ teams.each do |team|
     sorted_months = monthly.keys.sort
     puts "│"
     puts "│  #{COL_OTHER}MONTHLY TREND#{COL_RESET}"
-    puts "│  #{'Month'.ljust(9)} #{'Hours'.rjust(8)}  #{'Feat%'.rjust(7)}  #{'Bug%'.rjust(7)}  #{'Other%'.rjust(7)}  Mix                   Δ prev"
-    puts "│  #{'-' * 9} #{'-' * 8}  #{'-' * 7}  #{'-' * 7}  #{'-' * 7}  #{'-' * 20}  #{'-' * 26}"
+    puts "│  #{'Month'.ljust(9)} #{'Hours'.rjust(8)}  #{'Feat%'.rjust(7)}  #{'Bug%'.rjust(7)}  #{'Other%'.rjust(7)}  #{'F#'.rjust(4)}  #{'B#'.rjust(4)}  #{'O#'.rjust(4)}  Mix                   Δ prev"
+    puts "│  #{'-' * 9} #{'-' * 8}  #{'-' * 7}  #{'-' * 7}  #{'-' * 7}  #{'-' * 4}  #{'-' * 4}  #{'-' * 4}  #{'-' * 20}  #{'-' * 26}"
     prev_pcts = nil
     sorted_months.each do |month|
       data   = monthly[month]
@@ -544,6 +567,12 @@ teams.each do |team|
       ow    = [bw - fw - bw2, 0].max
       bar   = "#{COL_FEATURE}#{'█' * fw}#{COL_BUG}#{'█' * bw2}#{COL_OTHER}#{'█' * ow}#{COL_RESET}"
       label = month == current_month ? "#{month} *" : month
+
+      # Get completed counts for this month
+      f_count = monthly_completed[month][:feature] || 0
+      b_count = monthly_completed[month][:bug]     || 0
+      o_count = monthly_completed[month][:other]   || 0
+
       delta_str = if prev_pcts
         df  = f_pct - prev_pcts[:f]
         db  = b_pct - prev_pcts[:b]
@@ -552,7 +581,7 @@ teams.each do |team|
       else
         '—'
       end
-      puts "│  #{label.ljust(9)} #{fmt_hours(m_secs)}  #{fmt_pct(f_pct)}  #{fmt_pct(b_pct)}  #{fmt_pct(o_pct)}  #{bar}  #{delta_str}"
+      puts "│  #{label.ljust(9)} #{fmt_hours(m_secs)}  #{fmt_pct(f_pct)}  #{fmt_pct(b_pct)}  #{fmt_pct(o_pct)}  #{f_count.to_s.rjust(4)}  #{b_count.to_s.rjust(4)}  #{o_count.to_s.rjust(4)}  #{bar}  #{delta_str}"
       prev_pcts = { f: f_pct, b: b_pct, o: o_pct }
     end
     puts "│  (* current month — partial)" if monthly.key?(current_month)
