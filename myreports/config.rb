@@ -17,11 +17,12 @@
 # =============================================================================
 require_relative 'flow_metric_project'
 
+
 Exporter.configure do
 
 	# Output directory for generated reports
 	target_path 'target/'
-	
+
 	 # Jira configuration file
 	jira_config 'jira.config'
 
@@ -33,13 +34,20 @@ Exporter.configure do
                   '2026-01-01', '2026-01-06', '2026-04-06', '2026-05-01', '2026-05-14', '2026-05-25',
                   '2026-06-04', '2026-08-15', '2026-10-26', '2026-11-01', '2026-12-08', '2026-12-24',
                   '2026-12-25', '2026-12-26', '2026-12-31', '2027-01-01', '2027-01-06'
+				  
+	#Stalled statuses for all Projects
+	flow_stalled_statuses = [
+		'Ready for review',
+		'Ready for verification',
+		'Ready for acceptance'
+	]
 
 	# Project Configuration
 	# ------------------------------	
 	# 1) Team A
 	flow_metric_project name: 'Team A',
 		file_prefix: 'team-a',
-		rolling_date_count: 90,
+		rolling_date_count: 180,
 		no_earlier_than: '2026-01-01',
 		boards: {
 			0000 => lambda do |_|
@@ -49,8 +57,18 @@ Exporter.configure do
 		},
 		# We exclude Epics and Features. The default will exclude Sub-Tasks.
 		ignore_types: ['Epic','Feature'],
-		# We ignore team-specific issues
-		ignore_issues: ['ABC'],
+
+		# We ignore team-specific issues, optionally including their children
+		ignore_issues: lambda { |issue|
+		  ignored_issues = {
+			'ISSUEKEY'     => true,   # Some issue we want to exclude
+		  }
+		# Always exclude the configured issue itself.
+		# Exclude a child only if its parent's setting is true.
+		ignored_issues.key?(issue.key) ||
+			ignored_issues[issue.parent_key] == true
+		},
+
 		settings: {
 			date_annotations: [
 				{ date: "2026-01-12T11:00:00", label: "Some annotation" },
@@ -64,7 +82,7 @@ Exporter.configure do
 			stalled_threshold_days: 5,
 			# A list of statuses that should be considered stalled, same as blocked above.
 			# This is useful if you have queues in your workflow where the work is just sitting and waiting for someone to free up.
-			stalled_statuses: ['Ready for review','Ready for verification','Ready for acceptance'],
+			stalled_statuses: flow_stalled_statuses,
 			expedited_priority_names: ['Highest','Critical']
 		}
 
