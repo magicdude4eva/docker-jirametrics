@@ -3,9 +3,11 @@
 # Reads team config directly from config.rb — no duplication needed.
 #
 # Usage: ruby capacity_report.rb [path/to/config.rb]
+#        ruby capacity_report.rb --excludepersons person1,person2 [path/to/config.rb]
 #
 # Analyzes worklog data from Jira (via jirametrics.org JSON exports) to show:
 #   - Ignored maintenance issues with monthly breakdown
+#   - Excluded persons with their hours (via --excludepersons)
 #   - Sub-task parent distribution (sorted: Feature first, then others)
 #   - Monthly trend with focus mix, delta, and completed issue counts per bucket
 #   - Capacity split by bucket (Feature/Bug/Other)
@@ -16,8 +18,6 @@
 require 'json'
 require 'date'
 
-CONFIG_FILE = ARGV[0] || 'config.rb'
-TARGET      = File.dirname(CONFIG_FILE) + '/target'
 TOP_ISSUES  = 5
 TOP_PERSONS = 10
 
@@ -173,9 +173,9 @@ def fmt_delta(slope, good_up: true)
 end
 
 # Returns [seconds_after_cutoff, oldest_entry_date, paginated?,
-#          per_author_seconds { author_name => seconds }]
+#          per_author_seconds { author_name => seconds }, excluded_seconds]
 # Hours are attributed to WORKLOG AUTHOR (not issue assignee) for accuracy.
-def worklog_seconds_from(fields, cutoff)
+def worklog_seconds_from(fields, cutoff, excluded_persons = [])
   wl_data      = fields['worklog'] || {}
   entries      = wl_data['worklogs'] || []
   paginated    = wl_data['total'].to_i > entries.size
@@ -183,22 +183,49 @@ def worklog_seconds_from(fields, cutoff)
   total_secs   = 0
   by_author    = Hash.new(0)
   by_month     = Hash.new(0)
+  excluded_secs = 0
+  excluded_persons_with_worklogs = Set.new
 
   entries.each do |e|
     started = Date.parse(e['started']) rescue nil
     next unless started && (cutoff.nil? || started >= cutoff)
     secs   = e['timeSpentSeconds'].to_i
     author = e.dig('author', 'displayName') || 'Unassigned'
+
+    # Skip worklogs from excluded persons
+    if excluded_persons.include?(author)
+      excluded_secs += secs
+      excluded_persons_with_worklogs << author
+      next
+    end
+
     total_secs        += secs
     by_author[author] += secs
     by_month[started.strftime('%Y-%m')] += secs
   end
 
-  [total_secs, newest, paginated, by_author, by_month]
+  [total_secs, newest, paginated, by_author, by_month, excluded_secs, excluded_persons_with_worklogs]
 end
 
 # ── Main ──────────────────────────────────────────────────────────────────
 
+# Parse excluded persons from command line
+# Usage: ruby capacity_report.rb --excludepersons person1,person2,person3 [config.rb]
+excluded_persons_list = []
+if ARGV.size > 0 && ARGV[0] == '--excludepersons'
+  if ARGV.size > 1
+    excluded_persons_list = ARGV[1].split(',').map(&:strip)
+    ARGV.shift(2)
+  else
+    puts "ERROR: --excludepersons requires a comma-separated list of person names"
+    puts "Usage: ruby capacity_report.rb --excludepersons person1,person2 [config.rb]"
+    exit 1
+  end
+end
+
+# Re-parse CONFIG_FILE after potentially shifting ARGV
+CONFIG_FILE = ARGV[0] || 'config.rb'
+TARGET      = File.dirname(CONFIG_FILE) + '/target'
 teams = parse_config(CONFIG_FILE)
 
 puts "=== Capacity Report — #{Time.now.strftime('%Y-%m-%d %H:%M')} ==="
@@ -279,6 +306,10 @@ teams.each do |team|
   pagination_warn         = 0
   pagination_unknown      = 0
 
+  # Track excluded persons
+  excluded_persons_actual = Set.new
+  total_excluded_seconds = 0
+
   all_issues.each_value do |issue|
     fields     = issue['fields']
     next if fields.nil?
@@ -351,10 +382,13 @@ teams.each do |team|
     end
 
     # ── Worklogs ──────────────────────────────────────────────────────
-    spent, newest, paginated, by_author, by_month = worklog_seconds_from(fields, cutoff)
+    spent, newest, paginated, by_author, by_month, issue_excluded_secs, issue_excluded_persons =
+      worklog_seconds_from(fields, cutoff, excluded_persons_list)
+    total_excluded_seconds += issue_excluded_secs
+    excluded_persons_actual.merge(issue_excluded_persons)
 
     # Accumulate current month data
-    _, _, _, by_author_cm, _ = worklog_seconds_from(fields, current_month_start)
+    _, _, _, by_author_cm, _, _, _ = worklog_seconds_from(fields, current_month_start, excluded_persons_list)
 
     if paginated
       if newest.nil?
@@ -455,7 +489,8 @@ teams.each do |team|
   cutoff_label  = cutoff ? cutoff.to_s : 'all time'
   total_ignored = ignored_count + ignored_subtasks
   ignored_label = total_ignored > 0 ? ", #{total_ignored} ignored" : ''
-  puts "┌─ #{COL_BLUE}#{name}#{COL_RESET} ─ #{json_files.size} issues#{ignored_label} ─ worklogs from #{cutoff_label}"
+  excluded_label = excluded_persons_actual.any? ? ", #{excluded_persons_actual.size} excluded" : ''
+  puts "┌─ #{COL_BLUE}#{name}#{COL_RESET} ─ #{json_files.size} issues#{ignored_label}#{excluded_label} ─ worklogs from #{cutoff_label}"
 
   # ── Ignored summary ───────────────────────────────────────────────
   if total_ignored > 0
@@ -500,6 +535,16 @@ teams.each do |team|
     puts "│  #{SYM_OK}  PAGINATION: #{pagination_ok} issue(s) paginated; fetched page straddles #{cutoff} — in-window entries captured." if pagination_ok > 0
     puts "│  #{SYM_WARN}  PAGINATION: #{pagination_warn} issue(s) fetched page entirely pre-#{cutoff}; in-window worklogs may be on unfetched pages." if pagination_warn > 0
     puts "│     #{pagination_unknown} paginated with no entries to verify." if pagination_unknown > 0
+  end
+
+  # ── Staff excluded section ────────────────────────────────────────
+  if excluded_persons_actual.any?
+    puts "│"
+    puts "│  STAFF EXCLUDED"
+    excluded_persons_actual.sort.each do |person|
+      puts "│    #{person}"
+    end
+    puts "│    Total excluded hours: #{fmt_hours(total_excluded_seconds)}" if total_excluded_seconds > 0
   end
 
   # ── Sub-Task parent breakdown ──────────────────────────────────────
@@ -701,7 +746,7 @@ all_teams_summary.each do |t|
   else
     '—'.ljust(9)
   end
-  flag = signals.empty? ? "#{SYM_OK} all clear" : "#{SYM_WARN}  #{signals.join(' · ')}"
+  flag = signals.empty? ? "#{SYM_OK} all clear" : "#{SYM_WARN} #{signals.join(' · ')}"
   puts "║  #{t[:name].ljust(22)} #{fmt_hours(ts)} #{fmt_pct(f_pct)}  #{fmt_pct(b_pct)}  #{fmt_pct(o_pct)}  #{trend_col}  #{flag}"
 end
 
