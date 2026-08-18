@@ -35,7 +35,7 @@ class Exporter
       download do
         self.rolling_date_count(rolling_date_count) if rolling_date_count
         self.no_earlier_than(no_earlier_than) if no_earlier_than
-        github_repo *github_repos if github_repos
+        github_repo(*github_repos) if github_repos
       end
 
       issues.reject! do |issue|
@@ -44,7 +44,7 @@ class Exporter
 
       exporter.filter_issues issues, ignore_issues
 
-      discard_changes_before status_becomes: (starting_status || :backlog) # rubocop:disable Style/RedundantParentheses
+      discard_changes_before status_becomes: (starting_status || :backlog)
 
       file do
         file_suffix '.html'
@@ -65,7 +65,7 @@ class Exporter
           # 1 Work in Progress
           daily_wip_by_age_chart
           daily_wip_by_blocked_stalled_chart
-
+		  
           daily_wip_chart do
             header_text 'Daily WIP by Issue Type'
             description_text <<~TEXT
@@ -82,7 +82,7 @@ class Exporter
               end
             end
           end
-
+		  
           daily_wip_by_parent_chart
           wip_by_column_chart do
             show_recommendations
@@ -123,12 +123,12 @@ class Exporter
 
           flow_efficiency_scatterplot
           #sprint_burndown
-
+		  
           expedited_chart
-
+		  
 		  # Dependency chart
           dependency_chart
-
+		  
         end
       end
     end
@@ -185,20 +185,20 @@ class Exporter
               rules.label = issue.board.name
             end
           end
-
+		  
           cycletime_histogram do
             # For an aggregated report we group by board rather than by type
             grouping_rules do |issue, rules|
               rules.label = issue.board.name
             end
           end
-
+		  
           # aging_work_in_progress_chart
           daily_wip_by_parent_chart do
             # When aggregating, the chart tends to need more vertical space
             canvas height: 400, width: 800
           end
-
+		  
           # 2 Throughput
           throughput_chart do
             description_text <<~TEXT
@@ -222,8 +222,8 @@ class Exporter
             end
           end
 
-
-
+		  
+		  
           # Other charts
           aging_work_table do
             # In an aggregated report, we likely only care about items that are old so exclude anything
@@ -255,5 +255,8 @@ class Exporter
     end
   end
 
-
+  
+  
+  
+  
 end
