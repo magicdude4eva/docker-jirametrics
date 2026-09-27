@@ -16,6 +16,7 @@
 #
 # =============================================================================
 require_relative 'flow_metric_project'
+require_relative 'flow_metrics_summary'
 
 
 Exporter.configure do
@@ -28,13 +29,13 @@ Exporter.configure do
 
 	# Timezone offset for date/time calculations
 	timezone_offset '+01:00'
-	
-	#List of holiday dates for velocity calculations (Austrian holidays)
+
+	#List of holiday dates for velocity calculations
 	holiday_dates '2025-11-01', '2025-12-08', '2025-12-24', '2025-12-25', '2025-12-26', '2025-12-31',
                   '2026-01-01', '2026-01-06', '2026-04-06', '2026-05-01', '2026-05-14', '2026-05-25',
                   '2026-06-04', '2026-08-15', '2026-10-26', '2026-11-01', '2026-12-08', '2026-12-24',
                   '2026-12-25', '2026-12-26', '2026-12-31', '2027-01-01', '2027-01-06'
-				  
+
 	#Stalled statuses for all Projects
 	flow_stalled_statuses = [
 		'Ready for review',
@@ -71,7 +72,7 @@ Exporter.configure do
 
 		settings: {
 			date_annotations: [
-				{ date: "2026-01-12T11:00:00", label: "Some annotation" },
+				{ date: "2026-01-12T11:00:00", label: "Some annotation", description: "Some description we want to show on-hover" },
 				{ date: "2026-02-13T09:00:00", label: "Another annotation" }
 			],
 			# If the parent-linking is not working, we probably use custom-fields. look at the child JSON and find the name of the custom field

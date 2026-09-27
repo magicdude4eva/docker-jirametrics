@@ -59,13 +59,19 @@ class Exporter
                  type: :header
           end
 
+          # Flow Metrics Summary
+          flow_metrics_summary do
+            cycle_time_thresholds good: 10, warning: 20
+            throughput_thresholds good: 20, warning: 10
+          end
+
           # Daily view
           daily_view
 
           # 1 Work in Progress
           daily_wip_by_age_chart
           daily_wip_by_blocked_stalled_chart
-		  
+
           daily_wip_chart do
             header_text 'Daily WIP by Issue Type'
             description_text <<~TEXT
@@ -82,7 +88,7 @@ class Exporter
               end
             end
           end
-		  
+
           daily_wip_by_parent_chart
           wip_by_column_chart do
             show_recommendations
@@ -123,12 +129,12 @@ class Exporter
 
           flow_efficiency_scatterplot
           #sprint_burndown
-		  
+
           expedited_chart
-		  
+
 		  # Dependency chart
           dependency_chart
-		  
+
         end
       end
     end
@@ -185,20 +191,20 @@ class Exporter
               rules.label = issue.board.name
             end
           end
-		  
+
           cycletime_histogram do
             # For an aggregated report we group by board rather than by type
             grouping_rules do |issue, rules|
               rules.label = issue.board.name
             end
           end
-		  
+
           # aging_work_in_progress_chart
           daily_wip_by_parent_chart do
             # When aggregating, the chart tends to need more vertical space
             canvas height: 400, width: 800
           end
-		  
+
           # 2 Throughput
           throughput_chart do
             description_text <<~TEXT
@@ -222,8 +228,8 @@ class Exporter
             end
           end
 
-		  
-		  
+
+
           # Other charts
           aging_work_table do
             # In an aggregated report, we likely only care about items that are old so exclude anything
@@ -255,8 +261,8 @@ class Exporter
     end
   end
 
-  
-  
-  
-  
+
+
+
+
 end
