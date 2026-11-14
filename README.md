@@ -6,7 +6,7 @@
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![GitHub forks](https://img.shields.io/github/forks/magicdude4eva/docker-jirametrics?style=social)
 ![GitHub issues](https://img.shields.io/github/issues/magicdude4eva/docker-jirametrics)
-[![GitHub last commit](https://img.shields.io/github/last-commit/magicdude4eva/docker-jirametrics.svg)](https://github.com/magicdude4eva/docker-jirametrics/commits/master)
+[![GitHub last commit](https://img.shields.io/github/last-commit/magicdude4eva/docker-jirametrics.svg)](https://github.com/magicdude4eva/docker-jirametrics/commits/main)
 ![License](https://img.shields.io/github/license/magicdude4eva/docker-jirametrics)
 
 A Dockerized setup for [JiraMetrics](https://jirametrics.org/), automating the generation and serving of Jira flow metrics reports.
